@@ -1,6 +1,8 @@
 name: Deploy Stock Dashboard to GitHub Pages
 
 on:
+  push:
+    branches: [ main ]
   schedule:
     # 每個工作日晚上 22:30（台灣時間）執行 (14:30 UTC)
     - cron: '30 14 * * 1-5'
