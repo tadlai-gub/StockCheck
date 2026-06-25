@@ -1,0 +1,47 @@
+name: Deploy Stock Dashboard to GitHub Pages
+
+on:
+  schedule:
+    # 每個工作日晚上 22:30（台灣時間）執行 (14:30 UTC)
+    - cron: '30 14 * * 1-5'
+  workflow_dispatch: # 允許在 GitHub 頁面手動觸發執行
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Python Dependencies
+        run: |
+          pip install yfinance pandas openpyxl
+
+      - name: Update Stock Data
+        run: |
+          python stock-dashboard/update_data.py
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node Dependencies
+        working-directory: ./stock-dashboard
+        run: npm install --cache .npm-cache
+
+      - name: Build Dashboard
+        working-directory: ./stock-dashboard
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./stock-dashboard/dist
