@@ -146,7 +146,7 @@ def generate_candlestick_chart(ticker, df, name):
     
     plt.tight_layout()
     
-    img_path = f"/Users/tadlai/.gemini/antigravity/scratch/kline_{ticker.split('.')[0]}.png"
+    img_path = os.path.join(os.path.dirname(__file__), f"kline_{ticker.split('.')[0]}.png")
     plt.savefig(img_path, dpi=100)
     plt.close()
     return img_path
@@ -743,7 +743,7 @@ def send_email(file_path, recipient_email):
     '''
     
     # Save AppleScript to temp file
-    as_file = "/Users/tadlai/.gemini/antigravity/scratch/send_mail.scpt"
+    as_file = os.path.join(os.path.dirname(__file__), "send_mail.scpt")
     with open(as_file, 'w', encoding='utf-8') as f:
         f.write(applescript)
         
