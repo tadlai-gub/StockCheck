@@ -4,15 +4,22 @@ import datetime
 import yfinance as yf
 import pandas as pd
 
-STOCKS = {
-    "2610.TW": {"name": "華航", "shares": 1000},
-    "5271.TWO": {"name": "紘通", "shares": 2000},
-    "6116.TW": {"name": "彩晶", "shares": 2000},
-    "8299.TWO": {"name": "群聯", "shares": 30},
-    "2002.TW": {"name": "中鋼", "shares": 1000},
-    "2337.TW": {"name": "旺宏", "shares": 1000},
-    "1714.TW": {"name": "和桐", "shares": 0},
-}
+# Load stocks dynamically from public/stocks.json if available
+base_dir = os.path.dirname(__file__)
+stocks_json_path = os.path.join(base_dir, "public", "stocks.json")
+if os.path.exists(stocks_json_path):
+    with open(stocks_json_path, "r", encoding="utf-8") as f:
+        STOCKS = json.load(f)
+else:
+    STOCKS = {
+        "2610.TW": {"name": "華航", "shares": 1000},
+        "5271.TWO": {"name": "紘通", "shares": 2000},
+        "6116.TW": {"name": "彩晶", "shares": 2000},
+        "8299.TWO": {"name": "群聯", "shares": 30},
+        "2002.TW": {"name": "中鋼", "shares": 1000},
+        "2337.TW": {"name": "旺宏", "shares": 1000},
+        "1714.TW": {"name": "和桐", "shares": 0},
+    }
 
 def get_status(close_val, prev_week_low, weekly_ma20):
     if close_val == 0:

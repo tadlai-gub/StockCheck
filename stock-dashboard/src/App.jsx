@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Overview from './components/Overview';
 import VolatilityChart from './components/VolatilityChart';
 import StockDetail from './components/StockDetail';
-import { BarChart3, LineChart, Cpu, RefreshCw } from 'lucide-react';
+import Settings from './components/Settings';
+import { BarChart3, LineChart, Cpu, RefreshCw, Settings as SettingsIcon } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -82,6 +83,14 @@ export default function App() {
               個股詳細分析
             </button>
           )}
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <SettingsIcon size={16} /> 系統設定
+            </span>
+          </button>
           <button 
             onClick={fetchData} 
             className="tab-btn"
@@ -127,6 +136,9 @@ export default function App() {
                 onSelectStock={setSelectedStock}
                 onBack={() => setActiveTab('overview')}
               />
+            )}
+            {activeTab === 'settings' && (
+              <Settings onBack={() => setActiveTab('overview')} />
             )}
           </>
         )}

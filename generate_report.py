@@ -11,16 +11,23 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from openpyxl.drawing.image import Image
 
-# Stock holdings mapped from screenshots
-STOCKS = {
-    "2610.TW": {"name": "華航", "shares": 1000},
-    "5271.TWO": {"name": "紘通", "shares": 2000},
-    "6116.TW": {"name": "彩晶", "shares": 2000},
-    "8299.TWO": {"name": "群聯", "shares": 30},
-    "2002.TW": {"name": "中鋼", "shares": 1000},
-    "2337.TW": {"name": "旺宏", "shares": 1000},
-    "1714.TW": {"name": "和桐", "shares": 0},
-}
+# Load stocks dynamically from stock-dashboard/public/stocks.json if available
+import json
+base_dir = os.path.dirname(__file__)
+stocks_json_path = os.path.join(base_dir, "stock-dashboard", "public", "stocks.json")
+if os.path.exists(stocks_json_path):
+    with open(stocks_json_path, "r", encoding="utf-8") as f:
+        STOCKS = json.load(f)
+else:
+    STOCKS = {
+        "2610.TW": {"name": "華航", "shares": 1000},
+        "5271.TWO": {"name": "紘通", "shares": 2000},
+        "6116.TW": {"name": "彩晶", "shares": 2000},
+        "8299.TWO": {"name": "群聯", "shares": 30},
+        "2002.TW": {"name": "中鋼", "shares": 1000},
+        "2337.TW": {"name": "旺宏", "shares": 1000},
+        "1714.TW": {"name": "和桐", "shares": 0},
+    }
 
 def fetch_data():
     print("開始下載股票歷史數據...")
