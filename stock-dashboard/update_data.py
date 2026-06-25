@@ -103,6 +103,36 @@ def process_stocks():
                     "weekly_ma20": ma20_val
                 })
 
+            # Calculate Weekly K-lines
+            weekly_df_k = df.resample('W-FRI').agg({
+                'Open': 'first',
+                'High': 'max',
+                'Low': 'min',
+                'Close': 'last',
+                'Volume': 'sum'
+            }).dropna()
+
+            # Calculate Weekly MAs (MA10, MA20)
+            weekly_df_k['MA10'] = weekly_df_k['Close'].rolling(window=10).mean()
+            weekly_df_k['MA20'] = weekly_df_k['Close'].rolling(window=20).mean()
+
+            history_weekly = []
+            weekly_df_tail = weekly_df_k.tail(40) # Last 40 weeks
+            for dt, row in weekly_df_tail.iterrows():
+                ma10_val = float(row['MA10']) if row['MA10'] == row['MA10'] else None
+                ma20_val = float(row['MA20']) if row['MA20'] == row['MA20'] else None
+                
+                history_weekly.append({
+                    "date": dt.strftime("%Y-%m-%d"),
+                    "open": float(row['Open']),
+                    "high": float(row['High']),
+                    "low": float(row['Low']),
+                    "close": float(row['Close']),
+                    "volume": int(row['Volume']),
+                    "ma10": ma10_val,
+                    "ma20": ma20_val
+                })
+
             # Calculate Monthly K-lines
             try:
                 monthly_df = df.resample('ME').agg({
@@ -152,6 +182,7 @@ def process_stocks():
                 "prev_week_low": prev_week_low,
                 "status": status,
                 "history": history_list,
+                "history_weekly": history_weekly,
                 "history_monthly": history_monthly
             }
             

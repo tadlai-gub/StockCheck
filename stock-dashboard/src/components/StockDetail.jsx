@@ -68,7 +68,7 @@ const CustomTooltip = ({ active, payload, label, timeframe }) => {
               開 {open.toFixed(2)} | 高 {high.toFixed(2)} | 低 {low.toFixed(2)} | 收 {close.toFixed(2)}
             </span>
           </div>
-          {timeframe === 'daily' ? (
+          {timeframe === 'daily' && (
             <>
               {data.ma100 !== undefined && data.ma100 !== null && (
                 <div style={{ color: '#8B5CF6' }}>
@@ -81,7 +81,22 @@ const CustomTooltip = ({ active, payload, label, timeframe }) => {
                 </div>
               )}
             </>
-          ) : (
+          )}
+          {timeframe === 'weekly' && (
+            <>
+              {data.ma10 !== undefined && data.ma10 !== null && (
+                <div style={{ color: '#8B5CF6' }}>
+                  週線 10MA：<span style={{ fontWeight: 600 }}>${data.ma10.toFixed(2)}</span>
+                </div>
+              )}
+              {data.ma20 !== undefined && data.ma20 !== null && (
+                <div style={{ color: '#F59E0B' }}>
+                  週線 20MA (生命線)：<span style={{ fontWeight: 600 }}>${data.ma20.toFixed(2)}</span>
+                </div>
+              )}
+            </>
+          )}
+          {timeframe === 'monthly' && (
             <>
               {data.ma6 !== undefined && data.ma6 !== null && (
                 <div style={{ color: '#8B5CF6' }}>
@@ -111,7 +126,11 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
   if (!stock) return <div style={{ padding: 20 }}>未找到該股票數據</div>;
 
   // Choose historical source
-  const rawHistory = (timeframe === 'daily' ? stock.history : stock.history_monthly) || [];
+  const rawHistory = (timeframe === 'daily' 
+    ? stock.history 
+    : timeframe === 'weekly' 
+      ? stock.history_weekly 
+      : stock.history_monthly) || [];
 
   // Prepare chart data
   const chartData = rawHistory.map(day => ({
@@ -210,7 +229,9 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', margin: 0 }}>
             {timeframe === 'daily' 
               ? 'K線、日 100MA 與週 20MA 走勢圖 (近40日交易)' 
-              : '月K線與 6月、12月均線走勢圖 (近24個月)'}
+              : timeframe === 'weekly'
+                ? '週K線、週 10MA 與週 20MA 走勢圖 (近40週交易)'
+                : '月K線與 6月、12月均線走勢圖 (近24個月)'}
           </h3>
           <div style={{ display: 'flex', gap: 8 }}>
             <button 
@@ -219,6 +240,13 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
               style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
             >
               日線
+            </button>
+            <button 
+              onClick={() => setTimeframe('weekly')} 
+              className={`tab-btn ${timeframe === 'weekly' ? 'active' : ''}`}
+              style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
+            >
+              週線
             </button>
             <button 
               onClick={() => setTimeframe('monthly')} 
@@ -259,7 +287,7 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
               />
               
               {/* Conditional Indicators depending on timeframe */}
-              {timeframe === 'daily' ? (
+              {timeframe === 'daily' && (
                 <>
                   {/* Daily 100MA (Violet Line) */}
                   <Line 
@@ -299,7 +327,49 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                     />
                   )}
                 </>
-              ) : (
+              )}
+              {timeframe === 'weekly' && (
+                <>
+                  {/* Weekly 10MA (Violet Line) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="ma10" 
+                    stroke="#8B5CF6" 
+                    dot={false} 
+                    strokeWidth={1.5} 
+                    name="週線 10MA"
+                  />
+                  
+                  {/* Weekly 20MA (Orange Line) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="ma20" 
+                    stroke="#F59E0B" 
+                    dot={false} 
+                    strokeWidth={2} 
+                    name="週線 20MA (生命線)"
+                  />
+
+                  {/* Previous Week K-line Low Defense Line */}
+                  {stock.prev_week_low > 0 && (
+                    <ReferenceLine 
+                      y={stock.prev_week_low} 
+                      stroke="#EF4444" 
+                      strokeDasharray="4 4" 
+                      strokeWidth={1.5}
+                      label={{ 
+                        value: `前週低點防守: $${stock.prev_week_low.toFixed(2)}`, 
+                        fill: '#EF4444', 
+                        position: 'insideBottomRight',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        offset: 8
+                      }} 
+                    />
+                  )}
+                </>
+              )}
+              {timeframe === 'monthly' && (
                 <>
                   {/* Monthly 6MA (Violet Line) */}
                   <Line 
@@ -332,13 +402,13 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <Calendar size={18} style={{ color: 'var(--color-blue)' }} />
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem' }}>
-            歷史數據明細 ({timeframe === 'daily' ? '近40日' : '近24個月'})
+            歷史數據明細 ({timeframe === 'daily' ? '近40日' : timeframe === 'weekly' ? '近40週' : '近24個月'})
           </h3>
         </div>
         <div className="table-container">
           <table className="modern-table">
             <thead>
-              {timeframe === 'daily' ? (
+              {timeframe === 'daily' && (
                 <tr>
                   <th>交易日期</th>
                   <th style={{ textAlign: 'right' }}>開盤價</th>
@@ -351,7 +421,22 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                   <th style={{ textAlign: 'right' }}>週 20MA</th>
                   <th style={{ textAlign: 'center' }}>警示狀態</th>
                 </tr>
-              ) : (
+              )}
+              {timeframe === 'weekly' && (
+                <tr>
+                  <th>交易週別</th>
+                  <th style={{ textAlign: 'right' }}>開盤價</th>
+                  <th style={{ textAlign: 'right' }}>最高價</th>
+                  <th style={{ textAlign: 'right' }}>最低價</th>
+                  <th style={{ textAlign: 'right' }}>收盤價</th>
+                  <th style={{ textAlign: 'right' }}>每週價差</th>
+                  <th style={{ textAlign: 'right' }}>高低振幅</th>
+                  <th style={{ textAlign: 'right' }}>週 10MA</th>
+                  <th style={{ textAlign: 'right' }}>週 20MA</th>
+                  <th style={{ textAlign: 'center' }}>警示狀態</th>
+                </tr>
+              )}
+              {timeframe === 'monthly' && (
                 <tr>
                   <th>交易月份</th>
                   <th style={{ textAlign: 'right' }}>開盤價</th>
@@ -399,6 +484,40 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                       </td>
                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
                         {day.weekly_ma20 > 0 ? `$${day.weekly_ma20.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={badgeClass}>{rowStatus}</span>
+                      </td>
+                    </tr>
+                  );
+                } else if (timeframe === 'weekly') {
+                  const dayBreachedDefense = day.close < stock.prev_week_low && stock.prev_week_low > 0;
+                  const dayBreachedLife = day.close < day.ma20 && day.ma20 > 0;
+
+                  let rowStatus = "安全";
+                  let badgeClass = "badge badge-green";
+                  if (dayBreachedDefense) {
+                    rowStatus = "跌破防守";
+                    badgeClass = "badge badge-red";
+                  } else if (dayBreachedLife) {
+                    rowStatus = "跌破生命線";
+                    badgeClass = "badge badge-orange";
+                  }
+
+                  return (
+                    <tr key={day.date}>
+                      <td style={{ fontWeight: 500 }}>{day.date}</td>
+                      <td style={{ textAlign: 'right' }}>${day.open.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${day.high.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${day.low.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>${day.close.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>${diff.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{amp.toFixed(2)}%</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.ma10 > 0 ? `$${day.ma10.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.ma20 > 0 ? `$${day.ma20.toFixed(2)}` : '-'}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <span className={badgeClass}>{rowStatus}</span>
