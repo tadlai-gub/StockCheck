@@ -50,6 +50,41 @@ const CandlestickBar = (props) => {
   );
 };
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const { open, high, low, close, ma100, weekly_ma20 } = data;
+    const isUp = close >= open;
+    const priceColor = isUp ? '#EF4444' : '#10B981'; // 紅漲綠跌
+    
+    return (
+      <div className="glass-panel" style={{ padding: '12px 16px', background: 'rgba(10, 15, 30, 0.95)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: '0.85rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--text-primary)' }}>{label}</div>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ color: 'var(--text-secondary)' }}>
+            價格：
+            <span style={{ color: priceColor, fontWeight: 600 }}>
+              開 {open.toFixed(2)} | 高 {high.toFixed(2)} | 低 {low.toFixed(2)} | 收 {close.toFixed(2)}
+            </span>
+          </div>
+          {ma100 !== undefined && ma100 !== null && (
+            <div style={{ color: '#8B5CF6' }}>
+              日線 100MA：<span style={{ fontWeight: 600 }}>${ma100.toFixed(2)}</span>
+            </div>
+          )}
+          {weekly_ma20 !== undefined && weekly_ma20 !== null && (
+            <div style={{ color: '#F59E0B' }}>
+              週線 20MA (生命線)：<span style={{ fontWeight: 600 }}>${weekly_ma20.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function StockDetail({ data, selectedTicker, onSelectStock, onBack }) {
   if (!data || !data.stocks) return <div style={{ padding: 20 }}>載入中...</div>;
 
@@ -168,28 +203,7 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                 stroke="rgba(255,255,255,0.1)"
                 tickFormatter={(val) => `$${val}`}
               />
-              <Tooltip
-                contentStyle={{ 
-                  background: 'rgba(10, 15, 30, 0.9)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
-                  borderRadius: 8,
-                  color: 'var(--text-primary)'
-                }}
-                labelStyle={{ fontWeight: 600, marginBottom: 6 }}
-                formatter={(value, name, props) => {
-                  if (name === 'K線' && props.payload) {
-                    const { open, high, low, close } = props.payload;
-                    return [
-                      `開: ${open.toFixed(2)} | 高: ${high.toFixed(2)} | 低: ${low.toFixed(2)} | 收: ${close.toFixed(2)}`,
-                      '價格'
-                    ];
-                  }
-                  if (value !== undefined && value !== null) {
-                    return [`$${value.toFixed(2)}`, name];
-                  }
-                  return [value, name];
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: '0.85rem', paddingTop: 10 }} />
               
               {/* Candlesticks drawn using custom renderer */}

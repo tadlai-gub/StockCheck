@@ -128,7 +128,7 @@ export default function Settings({ onBack }) {
       // 1. Fetch current file SHA
       const getRes = await fetch(apiUrl, {
         headers: {
-          'Authorization': `token ${activePat}`,
+          'Authorization': `Bearer ${activePat}`,
           'Accept': 'application/vnd.github.v3+json'
         }
       });
@@ -149,7 +149,7 @@ export default function Settings({ onBack }) {
       const putRes = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
-          'Authorization': `token ${activePat}`,
+          'Authorization': `Bearer ${activePat}`,
           'Content-Type': 'application/json',
           'Accept': 'application/vnd.github.v3+json'
         },
@@ -192,7 +192,7 @@ export default function Settings({ onBack }) {
       const res = await fetch(triggerUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `token ${activePat}`,
+          'Authorization': `Bearer ${activePat}`,
           'Content-Type': 'application/json',
           'Accept': 'application/vnd.github.v3+json'
         },
