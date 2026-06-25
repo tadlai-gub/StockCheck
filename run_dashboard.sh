@@ -1,6 +1,6 @@
 #!/bin/bash
 # Move to the workspace directory
-cd "/Users/tadlai/Documents/Work/Antigravity"
+cd "/Users/tadlai/Documents/Work/Antigravity/Proj-StockCheck"
 
 echo "🔄 正在更新股票數據..."
 ./venv/bin/python stock-dashboard/update_data.py
