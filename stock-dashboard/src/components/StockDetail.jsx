@@ -50,10 +50,10 @@ const CandlestickBar = (props) => {
   );
 };
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, timeframe }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    const { open, high, low, close, ma100, weekly_ma20 } = data;
+    const { open, high, low, close } = data;
     const isUp = close >= open;
     const priceColor = isUp ? '#EF4444' : '#10B981'; // 紅漲綠跌
     
@@ -68,15 +68,32 @@ const CustomTooltip = ({ active, payload, label }) => {
               開 {open.toFixed(2)} | 高 {high.toFixed(2)} | 低 {low.toFixed(2)} | 收 {close.toFixed(2)}
             </span>
           </div>
-          {ma100 !== undefined && ma100 !== null && (
-            <div style={{ color: '#8B5CF6' }}>
-              日線 100MA：<span style={{ fontWeight: 600 }}>${ma100.toFixed(2)}</span>
-            </div>
-          )}
-          {weekly_ma20 !== undefined && weekly_ma20 !== null && (
-            <div style={{ color: '#F59E0B' }}>
-              週線 20MA (生命線)：<span style={{ fontWeight: 600 }}>${weekly_ma20.toFixed(2)}</span>
-            </div>
+          {timeframe === 'daily' ? (
+            <>
+              {data.ma100 !== undefined && data.ma100 !== null && (
+                <div style={{ color: '#8B5CF6' }}>
+                  日線 100MA：<span style={{ fontWeight: 600 }}>${data.ma100.toFixed(2)}</span>
+                </div>
+              )}
+              {data.weekly_ma20 !== undefined && data.weekly_ma20 !== null && (
+                <div style={{ color: '#F59E0B' }}>
+                  週線 20MA (生命線)：<span style={{ fontWeight: 600 }}>${data.weekly_ma20.toFixed(2)}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {data.ma6 !== undefined && data.ma6 !== null && (
+                <div style={{ color: '#8B5CF6' }}>
+                  月線 6MA：<span style={{ fontWeight: 600 }}>${data.ma6.toFixed(2)}</span>
+                </div>
+              )}
+              {data.ma12 !== undefined && data.ma12 !== null && (
+                <div style={{ color: '#F59E0B' }}>
+                  月線 12MA：<span style={{ fontWeight: 600 }}>${data.ma12.toFixed(2)}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -86,13 +103,18 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function StockDetail({ data, selectedTicker, onSelectStock, onBack }) {
+  const [timeframe, setTimeframe] = useState('daily');
+
   if (!data || !data.stocks) return <div style={{ padding: 20 }}>載入中...</div>;
 
   const stock = data.stocks[selectedTicker];
   if (!stock) return <div style={{ padding: 20 }}>未找到該股票數據</div>;
 
+  // Choose historical source
+  const rawHistory = (timeframe === 'daily' ? stock.history : stock.history_monthly) || [];
+
   // Prepare chart data
-  const chartData = stock.history.map(day => ({
+  const chartData = rawHistory.map(day => ({
     ...day,
     // Construct range for Recharts range bar: [min, max]
     bodyRange: [Math.min(day.open, day.close), Math.max(day.open, day.close)]
@@ -184,7 +206,29 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
 
       {/* Main Interactive Candlestick Chart */}
       <div className="glass-panel" style={{ padding: 24, marginBottom: 20 }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 20, fontSize: '1.25rem' }}>K線、日 100MA 與週 20MA 走勢圖 (近40日交易)</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', margin: 0 }}>
+            {timeframe === 'daily' 
+              ? 'K線、日 100MA 與週 20MA 走勢圖 (近40日交易)' 
+              : '月K線與 6月、12月均線走勢圖 (近24個月)'}
+          </h3>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              onClick={() => setTimeframe('daily')} 
+              className={`tab-btn ${timeframe === 'daily' ? 'active' : ''}`}
+              style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
+            >
+              日線
+            </button>
+            <button 
+              onClick={() => setTimeframe('monthly')} 
+              className={`tab-btn ${timeframe === 'monthly' ? 'active' : ''}`}
+              style={{ padding: '6px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
+            >
+              月線
+            </button>
+          </div>
+        </div>
         <div style={{ width: '100%', height: 480 }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
@@ -203,7 +247,7 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                 stroke="rgba(255,255,255,0.1)"
                 tickFormatter={(val) => `$${val}`}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip timeframe={timeframe} />} />
               <Legend wrapperStyle={{ fontSize: '0.85rem', paddingTop: 10 }} />
               
               {/* Candlesticks drawn using custom renderer */}
@@ -214,42 +258,69 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                 legendType="rect"
               />
               
-              {/* Daily 100MA (Violet Line) */}
-              <Line 
-                type="monotone" 
-                dataKey="ma100" 
-                stroke="#8B5CF6" 
-                dot={false} 
-                strokeWidth={1.5} 
-                name="日線 100MA"
-              />
-              
-              {/* Weekly 20MA (Orange Line) */}
-              <Line 
-                type="step" 
-                dataKey="weekly_ma20" 
-                stroke="#F59E0B" 
-                dot={false} 
-                strokeWidth={2} 
-                name="週線 20MA (生命線)"
-              />
+              {/* Conditional Indicators depending on timeframe */}
+              {timeframe === 'daily' ? (
+                <>
+                  {/* Daily 100MA (Violet Line) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="ma100" 
+                    stroke="#8B5CF6" 
+                    dot={false} 
+                    strokeWidth={1.5} 
+                    name="日線 100MA"
+                  />
+                  
+                  {/* Weekly 20MA (Orange Line) */}
+                  <Line 
+                    type="step" 
+                    dataKey="weekly_ma20" 
+                    stroke="#F59E0B" 
+                    dot={false} 
+                    strokeWidth={2} 
+                    name="週線 20MA (生命線)"
+                  />
 
-              {/* Previous Week K-line Low Defense Line */}
-              {stock.prev_week_low > 0 && (
-                <ReferenceLine 
-                  y={stock.prev_week_low} 
-                  stroke="#EF4444" 
-                  strokeDasharray="4 4" 
-                  strokeWidth={1.5}
-                  label={{ 
-                    value: `前週低點防守: $${stock.prev_week_low.toFixed(2)}`, 
-                    fill: '#EF4444', 
-                    position: 'insideBottomRight',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    offset: 8
-                  }} 
-                />
+                  {/* Previous Week K-line Low Defense Line */}
+                  {stock.prev_week_low > 0 && (
+                    <ReferenceLine 
+                      y={stock.prev_week_low} 
+                      stroke="#EF4444" 
+                      strokeDasharray="4 4" 
+                      strokeWidth={1.5}
+                      label={{ 
+                        value: `前週低點防守: $${stock.prev_week_low.toFixed(2)}`, 
+                        fill: '#EF4444', 
+                        position: 'insideBottomRight',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        offset: 8
+                      }} 
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Monthly 6MA (Violet Line) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="ma6" 
+                    stroke="#8B5CF6" 
+                    dot={false} 
+                    strokeWidth={1.5} 
+                    name="月線 6MA"
+                  />
+                  
+                  {/* Monthly 12MA (Orange Line) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="ma12" 
+                    stroke="#F59E0B" 
+                    dot={false} 
+                    strokeWidth={2} 
+                    name="月線 12MA"
+                  />
+                </>
               )}
             </ComposedChart>
           </ResponsiveContainer>
@@ -260,62 +331,100 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
       <div className="glass-panel" style={{ padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <Calendar size={18} style={{ color: 'var(--color-blue)' }} />
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem' }}>歷史數據明細 (近40日)</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem' }}>
+            歷史數據明細 ({timeframe === 'daily' ? '近40日' : '近24個月'})
+          </h3>
         </div>
         <div className="table-container">
           <table className="modern-table">
             <thead>
-              <tr>
-                <th>交易日期</th>
-                <th style={{ textAlign: 'right' }}>開盤價</th>
-                <th style={{ textAlign: 'right' }}>最高價</th>
-                <th style={{ textAlign: 'right' }}>最低價</th>
-                <th style={{ textAlign: 'right' }}>收盤價</th>
-                <th style={{ textAlign: 'right' }}>每日價差</th>
-                <th style={{ textAlign: 'right' }}>高低振幅</th>
-                <th style={{ textAlign: 'right' }}>日 100MA</th>
-                <th style={{ textAlign: 'right' }}>週 20MA</th>
-                <th style={{ textAlign: 'center' }}>警示狀態</th>
-              </tr>
+              {timeframe === 'daily' ? (
+                <tr>
+                  <th>交易日期</th>
+                  <th style={{ textAlign: 'right' }}>開盤價</th>
+                  <th style={{ textAlign: 'right' }}>最高價</th>
+                  <th style={{ textAlign: 'right' }}>最低價</th>
+                  <th style={{ textAlign: 'right' }}>收盤價</th>
+                  <th style={{ textAlign: 'right' }}>每日價差</th>
+                  <th style={{ textAlign: 'right' }}>高低振幅</th>
+                  <th style={{ textAlign: 'right' }}>日 100MA</th>
+                  <th style={{ textAlign: 'right' }}>週 20MA</th>
+                  <th style={{ textAlign: 'center' }}>警示狀態</th>
+                </tr>
+              ) : (
+                <tr>
+                  <th>交易月份</th>
+                  <th style={{ textAlign: 'right' }}>開盤價</th>
+                  <th style={{ textAlign: 'right' }}>最高價</th>
+                  <th style={{ textAlign: 'right' }}>最低價</th>
+                  <th style={{ textAlign: 'right' }}>收盤價</th>
+                  <th style={{ textAlign: 'right' }}>每月波段價差</th>
+                  <th style={{ textAlign: 'right' }}>高低振幅</th>
+                  <th style={{ textAlign: 'right' }}>月 6MA</th>
+                  <th style={{ textAlign: 'right' }}>月 12MA</th>
+                  <th style={{ textAlign: 'center' }}>警示狀態</th>
+                </tr>
+              )}
             </thead>
             <tbody>
-              {[...stock.history].reverse().map((day) => {
+              {[...rawHistory].reverse().map((day) => {
                 const diff = day.high - day.low;
                 const amp = day.low > 0 ? (diff / day.low) * 100 : 0;
                 
-                const dayBreachedDefense = day.close < stock.prev_week_low && stock.prev_week_low > 0;
-                const dayBreachedLife = day.close < day.weekly_ma20 && day.weekly_ma20 > 0;
+                if (timeframe === 'daily') {
+                  const dayBreachedDefense = day.close < stock.prev_week_low && stock.prev_week_low > 0;
+                  const dayBreachedLife = day.close < day.weekly_ma20 && day.weekly_ma20 > 0;
 
-                let rowStatus = "安全";
-                let badgeClass = "badge badge-green";
-                if (dayBreachedDefense) {
-                  rowStatus = "跌破防守";
-                  badgeClass = "badge badge-red";
-                } else if (dayBreachedLife) {
-                  rowStatus = "跌破生命線";
-                  badgeClass = "badge badge-orange";
+                  let rowStatus = "安全";
+                  let badgeClass = "badge badge-green";
+                  if (dayBreachedDefense) {
+                    rowStatus = "跌破防守";
+                    badgeClass = "badge badge-red";
+                  } else if (dayBreachedLife) {
+                    rowStatus = "跌破生命線";
+                    badgeClass = "badge badge-orange";
+                  }
+
+                  return (
+                    <tr key={day.date}>
+                      <td style={{ fontWeight: 500 }}>{day.date}</td>
+                      <td style={{ textAlign: 'right' }}>${day.open.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${day.high.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${day.low.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>${day.close.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>${diff.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{amp.toFixed(2)}%</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.ma100 > 0 ? `$${day.ma100.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.weekly_ma20 > 0 ? `$${day.weekly_ma20.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={badgeClass}>{rowStatus}</span>
+                      </td>
+                    </tr>
+                  );
+                } else {
+                  return (
+                    <tr key={day.date}>
+                      <td style={{ fontWeight: 500 }}>{day.date}</td>
+                      <td style={{ textAlign: 'right' }}>${day.open.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${day.high.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${day.low.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>${day.close.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>${diff.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{amp.toFixed(2)}%</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.ma6 > 0 ? `$${day.ma6.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.ma12 > 0 ? `$${day.ma12.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'center', color: 'var(--text-muted)' }}>-</td>
+                    </tr>
+                  );
                 }
-
-                return (
-                  <tr key={day.date}>
-                    <td style={{ fontWeight: 500 }}>{day.date}</td>
-                    <td style={{ textAlign: 'right' }}>${day.open.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>${day.high.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>${day.low.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>${day.close.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>${diff.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{amp.toFixed(2)}%</td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
-                      {day.ma100 > 0 ? `$${day.ma100.toFixed(2)}` : '-'}
-                    </td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
-                      {day.weekly_ma20 > 0 ? `$${day.weekly_ma20.toFixed(2)}` : '-'}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className={badgeClass}>{rowStatus}</span>
-                    </td>
-                  </tr>
-                );
               })}
             </tbody>
           </table>

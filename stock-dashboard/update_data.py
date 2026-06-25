@@ -34,7 +34,7 @@ def get_status(close_val, prev_week_low, weekly_ma20):
 def process_stocks():
     print("開始下載與處理股票數據...")
     end_date = datetime.date.today()
-    start_date = end_date - datetime.timedelta(days=260)
+    start_date = end_date - datetime.timedelta(days=1100)
     
     output_data = {
         "updateTime": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -47,7 +47,7 @@ def process_stocks():
             t = yf.Ticker(ticker)
             df = t.history(start=start_date.isoformat(), end=end_date.isoformat())
             if df.empty:
-                df = t.history(period="1y")
+                df = t.history(period="3y")
                 
             if df.empty:
                 print(f"警告: {ticker} 無法取得數據")
@@ -102,6 +102,45 @@ def process_stocks():
                     "ma100": ma100_val,
                     "weekly_ma20": ma20_val
                 })
+
+            # Calculate Monthly K-lines
+            try:
+                monthly_df = df.resample('ME').agg({
+                    'Open': 'first',
+                    'High': 'max',
+                    'Low': 'min',
+                    'Close': 'last',
+                    'Volume': 'sum'
+                }).dropna()
+            except ValueError:
+                monthly_df = df.resample('M').agg({
+                    'Open': 'first',
+                    'High': 'max',
+                    'Low': 'min',
+                    'Close': 'last',
+                    'Volume': 'sum'
+                }).dropna()
+
+            # Calculate Monthly MAs
+            monthly_df['MA6'] = monthly_df['Close'].rolling(window=6).mean()
+            monthly_df['MA12'] = monthly_df['Close'].rolling(window=12).mean()
+
+            history_monthly = []
+            monthly_df_tail = monthly_df.tail(24) # Last 24 months
+            for dt, row in monthly_df_tail.iterrows():
+                ma6_val = float(row['MA6']) if row['MA6'] == row['MA6'] else None
+                ma12_val = float(row['MA12']) if row['MA12'] == row['MA12'] else None
+                
+                history_monthly.append({
+                    "date": dt.strftime("%Y-%m"),
+                    "open": float(row['Open']),
+                    "high": float(row['High']),
+                    "low": float(row['Low']),
+                    "close": float(row['Close']),
+                    "volume": int(row['Volume']),
+                    "ma6": ma6_val,
+                    "ma12": ma12_val
+                })
                 
             output_data["stocks"][ticker] = {
                 "name": info["name"],
@@ -112,7 +151,8 @@ def process_stocks():
                 "weekly_ma20": weekly_ma20,
                 "prev_week_low": prev_week_low,
                 "status": status,
-                "history": history_list
+                "history": history_list,
+                "history_monthly": history_monthly
             }
             
         except Exception as e:
