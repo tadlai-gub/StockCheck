@@ -14,7 +14,7 @@ export default function App() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/data.json');
+      const response = await fetch(`${import.meta.env.BASE_URL}data.json`);
       if (!response.ok) {
         throw new Error('無法載入股票數據檔案。請確保已執行 update_data.py 生成數據。');
       }
