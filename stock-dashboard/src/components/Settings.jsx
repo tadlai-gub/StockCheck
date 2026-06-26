@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Plus, Trash2, Save, RefreshCw, Key, ShieldAlert } from 'lucide-react';
 
-export default function Settings({ onBack }) {
+export default function Settings({ onBack, onStartUpdate }) {
   const [pat, setPat] = useState(() => localStorage.getItem('gh_pat') || '');
   const [repo, setRepo] = useState('tadlai-gub/StockCheck'); // Default repo
   const [stocks, setStocks] = useState({});
@@ -202,11 +202,14 @@ export default function Settings({ onBack }) {
       });
 
       if (res.ok || res.status === 204) {
+        if (onStartUpdate) {
+          onStartUpdate();
+        }
         setStatusMsg({
           type: 'success',
           text: isSaveFlow 
-            ? '✅ 股票清單已成功儲存！雲端 Actions 數據更新已啟動。請於 1~2 分鐘後重新整理網頁。'
-            : '✅ 手動更新指令已送出！雲端 Actions 正在抓取最新股價，請於 1~2 分鐘後點選重新整理觀看。'
+            ? '✅ 股票清單已成功儲存！雲端 Actions 數據更新已啟動。'
+            : '✅ 手動更新指令已送出！雲端 Actions 正在抓取最新股價。'
         });
       } else {
         const errData = await res.json().catch(() => ({ message: `HTTP status ${res.status}` }));
