@@ -70,6 +70,16 @@ const CustomTooltip = ({ active, payload, label, timeframe }) => {
           </div>
           {timeframe === 'daily' && (
             <>
+              {data.ma5 !== undefined && data.ma5 !== null && (
+                <div style={{ color: '#EC4899' }}>
+                  日線 5MA：<span style={{ fontWeight: 600 }}>${data.ma5.toFixed(2)}</span>
+                </div>
+              )}
+              {data.ma10 !== undefined && data.ma10 !== null && (
+                <div style={{ color: '#06B6D4' }}>
+                  日線 10MA：<span style={{ fontWeight: 600 }}>${data.ma10.toFixed(2)}</span>
+                </div>
+              )}
               {data.ma100 !== undefined && data.ma100 !== null && (
                 <div style={{ color: '#8B5CF6' }}>
                   日線 100MA：<span style={{ fontWeight: 600 }}>${data.ma100.toFixed(2)}</span>
@@ -289,6 +299,26 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
               {/* Conditional Indicators depending on timeframe */}
               {timeframe === 'daily' && (
                 <>
+                  {/* Daily 5MA (Pink Line) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="ma5" 
+                    stroke="#EC4899" 
+                    dot={false} 
+                    strokeWidth={1} 
+                    name="日線 5MA"
+                  />
+
+                  {/* Daily 10MA (Cyan Line) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="ma10" 
+                    stroke="#06B6D4" 
+                    dot={false} 
+                    strokeWidth={1} 
+                    name="日線 10MA"
+                  />
+
                   {/* Daily 100MA (Violet Line) */}
                   <Line 
                     type="monotone" 
@@ -417,6 +447,8 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                   <th style={{ textAlign: 'right' }}>收盤價</th>
                   <th style={{ textAlign: 'right' }}>每日價差</th>
                   <th style={{ textAlign: 'right' }}>高低振幅</th>
+                  <th style={{ textAlign: 'right' }}>日 5MA</th>
+                  <th style={{ textAlign: 'right' }}>日 10MA</th>
                   <th style={{ textAlign: 'right' }}>日 100MA</th>
                   <th style={{ textAlign: 'right' }}>週 20MA</th>
                   <th style={{ textAlign: 'center' }}>警示狀態</th>
@@ -479,6 +511,12 @@ export default function StockDetail({ data, selectedTicker, onSelectStock, onBac
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>${day.close.toFixed(2)}</td>
                       <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>${diff.toFixed(2)}</td>
                       <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{amp.toFixed(2)}%</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.ma5 > 0 ? `$${day.ma5.toFixed(2)}` : '-'}
+                      </td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
+                        {day.ma10 > 0 ? `$${day.ma10.toFixed(2)}` : '-'}
+                      </td>
                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>
                         {day.ma100 > 0 ? `$${day.ma100.toFixed(2)}` : '-'}
                       </td>

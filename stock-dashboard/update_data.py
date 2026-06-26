@@ -56,7 +56,9 @@ def process_stocks():
             # Clean up NaNs
             df = df.dropna(subset=['Open', 'High', 'Low', 'Close'])
             
-            # Calculate Daily 100MA
+            # Calculate Daily 5MA, 10MA, and 100MA
+            df['MA5'] = df['Close'].rolling(window=5).mean()
+            df['MA10'] = df['Close'].rolling(window=10).mean()
             df['MA100'] = df['Close'].rolling(window=100).mean()
             
             # Calculate Weekly 20MA
@@ -89,6 +91,8 @@ def process_stocks():
             history_list = []
             df_40 = df.tail(40)
             for dt, row in df_40.iterrows():
+                ma5_val = float(row['MA5']) if row['MA5'] == row['MA5'] else None
+                ma10_val = float(row['MA10']) if row['MA10'] == row['MA10'] else None
                 ma100_val = float(row['MA100']) if row['MA100'] == row['MA100'] else None
                 ma20_val = float(row['Weekly_MA20']) if row['Weekly_MA20'] == row['Weekly_MA20'] else None
                 
@@ -99,6 +103,8 @@ def process_stocks():
                     "low": float(row['Low']),
                     "close": float(row['Close']),
                     "volume": int(row['Volume']),
+                    "ma5": ma5_val,
+                    "ma10": ma10_val,
                     "ma100": ma100_val,
                     "weekly_ma20": ma20_val
                 })
